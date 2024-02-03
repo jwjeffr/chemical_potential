@@ -1,0 +1,18 @@
+{
+	"exec": "lmp",
+	"units": "metal",
+	"input_data": "example/cantor.dat",
+	"ntypes": 5,
+	"pair_style": "meam",
+	"pair_coeff": "* * example/library.meam Co Ni Cr Fe Mn example/CoNiCrFeMn.meam Co Ni Cr Fe Mn",
+	"potential_file": "example/cantor.pot",
+	"dmax": 1.0e-3,
+	"etol": 0.0,
+	"ftol": 1.0e-8,
+	"maxsteps": 100000,
+	"pressure": 0.0,
+	"vmax": 0.001,
+	"enthalpy_file": "example/enthalpy.txt",
+	"occupying_energies_file": "example/occupying.txt",
+	"log_file": "example/log.insertions"
+}

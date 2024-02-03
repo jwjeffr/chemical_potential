@@ -1,0 +1,58 @@
+# some default settings
+echo log
+units ${units}
+newton on
+boundary p p p
+atom_style atomic
+neighbor 1.0 bin
+thermo 100
+
+read_data ${input_data_file}
+compute temperature all temp
+reset_timestep 0
+run 0
+if "$(c_temperature) != 0" then "velocity all scale 0.0"
+include ${potential_file}
+
+min_style cg
+print "${dmax}"
+min_modify dmax ${dmax} line quadratic
+fix press_rel all box/relax aniso ${pressure} vmax ${vmax}
+minimize ${etol} ${ftol} ${maxsteps} ${maxsteps}
+set group all image 0 0 0
+unfix press_rel
+
+variable enthalpy_per_atom equal "enthalpy/atoms"
+variable energy equal "pe"
+
+reset_timestep 0
+run 0
+
+print "# enthalpy per_atom" file ${enthalpy_file}
+print "${enthalpy_per_atom}" append ${enthalpy_file}
+
+variable print_index loop ${ntypes}
+label print_loop
+
+	print "# type ${print_index} occupying_energies" file ${occupying_energies_file}
+
+	next print_index
+	jump SELF print_loop
+
+variable num_atoms equal "count(all)"
+variable site loop ${num_atoms}
+label insertions_loop
+
+	variable type_label loop ${ntypes}
+	label type_loop
+
+		reset_timestep 0
+		set atom ${site} type ${type_label}
+		minimize ${etol} ${ftol} ${maxsteps} ${maxsteps}
+		print "${energy}" append ${occupying_energies_file}
+
+		next type_label
+		jump SELF type_loop
+
+	next site
+	jump SELF insertions_loop
