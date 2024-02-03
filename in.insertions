@@ -4,10 +4,12 @@ units ${units}
 newton on
 boundary p p p
 atom_style atomic
+atom_modify map yes
 neighbor 1.0 bin
 thermo 100
 
 read_data ${input_data_file}
+thermo_style custom step atoms vol pe temp press
 compute temperature all temp
 reset_timestep 0
 run 0
@@ -18,41 +20,55 @@ min_style cg
 print "${dmax}"
 min_modify dmax ${dmax} line quadratic
 fix press_rel all box/relax aniso ${pressure} vmax ${vmax}
-minimize ${etol} ${ftol} ${maxsteps} ${maxsteps}
+#minimize ${etol} ${ftol} ${maxsteps} ${maxsteps}
 set group all image 0 0 0
 unfix press_rel
+reset_timestep 0
 
-variable enthalpy_per_atom equal "enthalpy/atoms"
 variable energy equal "pe"
 
-reset_timestep 0
-run 0
+variable header string "# init_type"
 
-print "# enthalpy per_atom" file ${enthalpy_file}
-print "${enthalpy_per_atom}" append ${enthalpy_file}
+variable type_index loop ${ntypes}
+label header_loop
+	
+	variable header string "${header} E_${type_index}"
 
-variable print_index loop ${ntypes}
-label print_loop
+	next type_index
+	jump SELF header_loop
 
-	print "# type ${print_index} occupying_energies" file ${occupying_energies_file}
+variable header string "${header} x y z"
+print "${header}" file ${occupying_energies_file}
 
-	next print_index
-	jump SELF print_loop
+compute position all property/atom x y z
+compute type all property/atom type
 
 variable num_atoms equal "count(all)"
 variable site loop ${num_atoms}
 label insertions_loop
+	
+	run 0
+	variable t equal c_type[${site}]
 
 	variable type_label loop ${ntypes}
+	variable row string "${t}"
+
 	label type_loop
 
 		reset_timestep 0
 		set atom ${site} type ${type_label}
-		minimize ${etol} ${ftol} ${maxsteps} ${maxsteps}
-		print "${energy}" append ${occupying_energies_file}
+#		minimize ${etol} ${ftol} ${maxsteps} ${maxsteps}
+		run 0
+		variable row string "${row} ${energy}"
 
 		next type_label
 		jump SELF type_loop
+
+	variable x equal c_position[${site}][1]
+	variable y equal c_position[${site}][2]
+	variable z equal c_position[${site}][3]
+	variable row string "${row} ${x} ${y} ${z}"
+	print "${row}" append ${occupying_energies_file}
 
 	next site
 	jump SELF insertions_loop

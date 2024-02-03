@@ -25,12 +25,13 @@ maxsteps=$(cfg '.maxsteps')
 
 enthalpy_file=$(cfg '.enthalpy_file')
 ntypes=$(grep -oP '\d+(?=\s*atom types)' ${input_data_file})
-occupying_energies_file=$(cfg '.occupying_energies')
+occupying_energies_file=$(cfg '.occupying_energies_file')
 
 log_file=$(cfg '.log_file')
 
 mpirun -np ${np} ${lmp} -in in.insertions \
   -var units ${units} \
+  -var ntypes ${ntypes} \
   -var input_data_file ${input_data_file} \
   -var potential_file ${potential_file} \
   -var dmax ${dmax} \
