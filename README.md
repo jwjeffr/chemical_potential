@@ -57,7 +57,7 @@ Other variables define:
 - ``occupying_energies_file``: The desired location of the occupying energies file
 - ``extra_vars``: Extra variables passed into LAMMPS, mostly related to minimization settings.
 
-Then, the analysis script [chemical_potentials.py](https://github.com/jwjeffr/chemical_potential/blob/main/chemical_potential.py) uses the final three variables specified in the config file. They are defined by:
+Then, the analysis script [chemical_potentials.py](https://github.com/jwjeffr/chemical_potential/blob/main/chemical_potentials.py) uses the final three variables specified in the config file. They are defined by:
 
 - ``axis``: The desired axis to create the chemical potential profile over
 - ``num_atoms_per_chunk``: The number of atoms to include in each chunk when averaging
@@ -71,7 +71,7 @@ z mu_1(z) mu_2(z) ...
 .
 ```
 
-where ``mu_i(z)`` is the chemical potential of ``i`` at position ``z``.
+where ``mu_i(z)`` is the chemical potential of ``i`` at position ``z``. The output file created by the example input file is at [example/chemical_potentials.txt](https://github.com/jwjeffr/chemical_potential/blob/main/example/chemical_potentials.txt).
 
 ## Acknowledgements
 
