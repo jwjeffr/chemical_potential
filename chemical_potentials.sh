@@ -6,8 +6,6 @@ cfg () {
 
 lmp=$(cfg '.exec')
 np=$(cfg '.np')
-units=$(cfg '.units')
-input_data_file=$(cfg '.input_data')
 
 pair_style=$(cfg '.pair_style')
 pair_coeff=$(cfg '.pair_coeff')
@@ -16,28 +14,28 @@ potential_file=$(cfg '.potential_file')
 echo "pair_style ${pair_style}" > ${potential_file}
 echo "pair_coeff ${pair_coeff}" >> ${potential_file}
 
-dmax=$(cfg '.dmax')
-pressure=$(cfg '.pressure')
-vmax=$(cfg '.vmax')
-etol=$(cfg '.etol')
-ftol=$(cfg '.ftol')
-maxsteps=$(cfg '.maxsteps')
-
+input_data_file=$(cfg '.input_data_file')
 ntypes=$(grep -oP '\d+(?=\s*atom types)' ${input_data_file})
-occupying=$(cfg '.occupying')
 
-log_file=$(cfg '.log_file')
+# using cfg() doesn't work here? why?
+mpi_args=$(jq -r '.mpi_args | join(" ")' ${config_file_name})
 
-mpirun -np ${np} ${lmp} -in in.insertions \
-  -var units ${units} \
-  -var ntypes ${ntypes} \
-  -var input_data_file ${input_data_file} \
-  -var potential_file ${potential_file} \
-  -var dmax ${dmax} \
-  -var pressure ${pressure} \
-  -var vmax ${vmax} \
-  -var etol ${etol} \
-  -var ftol ${ftol} \
-  -var maxsteps ${maxsteps} \
-  -var occupying_energies_file ${occupying} \
-  -log ${log_file}
+envvars_dict=$(cfg '.env_vars')
+envvars=""
+for key in $(echo ${envvars_dict} | jq -r 'keys_unsorted[]')
+do
+  value=$(echo ${envvars_dict} | jq -r ".${key}")
+  envvars+=" ${key}=${value}"
+done
+
+options=$(cfg '.lmp_options')
+
+var_str="-var ntypes ${ntypes} -var potential_file ${potential_file} -var input_data_file ${input_data_file} -var occupying_energies_file $(cfg '.occupying_energies_file') -var relaxed_data_file $(cfg '.relaxed_data_file')"
+more_vars=("units" "dmax" "pressure" "vmax" "etol" "ftol" "maxsteps")
+vars_dict=$(cfg '.extra_vars')
+for var in "${more_vars[@]}"
+do
+  var_str+=" -var ${var} $(echo ${vars_dict} | jq --arg keyvar "$var" '.[$keyvar]')"
+done
+
+env ${envvars} mpirun ${mpi_args} -np ${np} ${lmp} ${options} -in in.insertions -log $(cfg '.log_file') ${var_str}

@@ -1,4 +1,5 @@
-# some settings
+# some default settings
+
 echo log
 units ${units}
 newton on
@@ -8,85 +9,76 @@ atom_modify map yes
 neighbor 1.0 bin
 thermo 100
 
-# read in the initial data
+# read in configuration from MC-MD, minimize at 0 pressure, rewrite minimized to new file
+
 read_data ${input_data_file}
-thermo_style custom step atoms vol pe temp press
-compute temperature all temp
 reset_timestep 0
-
-# if input file has velocities, zero them out
-run 0
-if "$(c_temperature) != 0" then "velocity all scale 0.0"
-
-# add potential file info
+#velocity all scale 0.0
 include ${potential_file}
-
-# minimize initial configuration at 0 pressure
 min_style cg
-print "${dmax}"
 min_modify dmax ${dmax} line quadratic
 fix press_rel all box/relax aniso ${pressure} vmax ${vmax}
 minimize ${etol} ${ftol} ${maxsteps} ${maxsteps}
 set group all image 0 0 0
+write_data ${relaxed_data_file}
 unfix press_rel
-reset_timestep 0
 
+# calculate the enthalpy per atom, print it to a file so we can read it into a post-processing script
+
+thermo_style custom step temp etotal press vol enthalpy
 variable energy equal "pe"
+reset_timestep 0
+run 0
 
-# loop to create header labeling with initial reference type and occupying energies
-variable header string "# init_type"
+# initialize files for vacant energies and each occupying energy
+# printing also clears file
 
-# loop over types to add to header
-variable type_index loop ${ntypes}
-label header_loop
+variable header string "# init type"
+
+variable print_index loop ${ntypes}
+label print_loop
 	
-	variable header string "${header} E_${type_index}"
+variable header string "${header} E_${print_index}"
 
-	next type_index
-	jump SELF header_loop
+next print_index
+jump SELF print_loop
 
-# add x, y, and z to header
 variable header string "${header} x y z"
 print "${header}" file ${occupying_energies_file}
 
-# compute positions and types at initial configuration
-compute position all property/atom x y z
-compute type all property/atom type
-
 # loop through all sites
+
 variable num_atoms equal "count(all)"
+
 variable site loop ${num_atoms}
 label insertions_loop
-	
-	# get initial occupying type
-	run 0
-	variable t equal c_type[${site}]
 
-	# loop through all types
-	variable type_label loop ${ntypes}
-	variable row string "${t}"
+run 0
+variable t equal type[v_site]
 
-	label type_loop
+delete_atoms group all
+read_data ${relaxed_data_file} add merge
 
-		# calculate occupying energy and append it to row
-		reset_timestep 0
-		set atom ${site} type ${type_label}
-		minimize ${etol} ${ftol} ${maxsteps} ${maxsteps}
-		run 0
-		variable row string "${row} ${energy}"
+# loop through all atom types
 
-		next type_label
-		jump SELF type_loop
+variable type_label loop ${ntypes}
+variable row string "${t}"
+label type_loop
 
-	# add position of site to row, add to file
-	variable x equal c_position[${site}][1]
-	variable y equal c_position[${site}][2]
-	variable z equal c_position[${site}][3]
-	variable row string "${row} ${x} ${y} ${z}"
-	print "${row}" append ${occupying_energies_file}
+# insert type at site, print occupying energy to file
+reset_timestep 0
+set atom ${site} type ${type_label}
+minimize ${etol} ${ftol} ${maxsteps} ${maxsteps}
+variable row string "${row} ${energy}"
 
-	# set atom back to reference configuration
-	set atom ${site} type ${t}
+next type_label
+jump SELF type_loop
 
-	next site
-	jump SELF insertions_loop
+variable xcoord equal x[v_site]
+variable ycoord equal y[v_site]
+variable zcoord equal z[v_site]
+variable row string "${row} ${xcoord} ${ycoord} ${zcoord}"
+print "${row}" append ${occupying_energies_file}
+
+next site
+jump SELF insertions_loop
