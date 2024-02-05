@@ -57,7 +57,7 @@ class OneDimChunkFilter(Filter):
     low: float
     high: float
 
-    def employ(self, data: ArrayLike) -> ArrayLike
+    def employ(self, data: ArrayLike) -> ArrayLike:
     
         """
         filter data, return data captured in interval [low, high] and p(ω)
