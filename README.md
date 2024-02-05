@@ -1,5 +1,6 @@
 # chemical_potential
-[LAMMPS](https://lammps.org) interface to compute spatially-dependent chemical potentials
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## About
 
