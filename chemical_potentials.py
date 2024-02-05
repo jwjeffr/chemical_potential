@@ -7,8 +7,6 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from numpy.lib.stride_tricks import sliding_window_view
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 
 
 @dataclass
@@ -73,12 +71,16 @@ def get_chemical_potentials(data: ArrayLike, filter_: callable = IdentityFilter(
 
 def main():
 
-    mpl.use('Agg')
+    axes = {
+        'x': 0,
+        'y': 1,
+        'z': 2
+    }
 
     data = np.loadtxt(sys.argv[1])
     data = data[data[:, -1].argsort()]
-    z_coords = data[:, -1]
-    num_atoms_per_chunk = 100
+    z_coords = data[:, -3 + axes[sys.argv[2]]]
+    num_atoms_per_chunk = int(sys.argv[3])
     windows = sliding_window_view(z_coords, window_shape=num_atoms_per_chunk)
     window_centers = np.zeros(windows.shape[0])
     chemical_potentials = np.zeros((windows.shape[0], data.shape[1] - 4))
@@ -87,17 +89,15 @@ def main():
         filter_ = OneDimChunkFilter(axis=2, low=np.min(w), high=np.max(w))
         chemical_potentials[i, :] = get_chemical_potentials(data, filter_=filter_)
         
-    type_map = {0: 'Co', 1: 'Ni', 2: 'Cr', 3: 'Fe', 4: 'Mn'}
+    header='center'
+    for i in np.arange(data.shape[1] - 4, dtype=int):
+        header += f' mu_{i + 1:.0f}'
         
-    for i, c in enumerate(chemical_potentials.T):
-        plt.scatter(window_centers, c, label=type_map[i], zorder=5, alpha=0.25, edgecolor='black')
-    
-    plt.grid()
-    plt.legend(title=r'$\alpha$', bbox_to_anchor=(1.05, 1.0))
-    plt.xlabel(r'$z$ ($\AA$)')
-    plt.ylabel(r'chemical potential of $\alpha$ (eV)' + '\n' + f'({num_atoms_per_chunk} atoms per chunk)')
-    plt.tight_layout()
-    plt.savefig('chemical_potentials.svg', bbox_inches='tight')
+    np.savetxt(
+        sys.argv[4],
+        np.vstack((window_centers, *chemical_potentials.T)).T,
+        header=header
+    )
     
     
 if __name__ == '__main__':

@@ -1,0 +1,7 @@
+#PBS -S /bin/bash
+#PBS -N chempot
+#PBS -l select=1:ncpus=32:mpiprocs=32:mem=64gb:interconnect=any,walltime=72:00:00
+#PBS -j oe
+cd $PBS_O_WORKDIR
+
+./chemical_potentials.sh config.json

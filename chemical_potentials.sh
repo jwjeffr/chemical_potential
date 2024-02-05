@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 config_file_name=$1
 
 cfg () {
@@ -30,7 +32,14 @@ done
 
 options=$(cfg '.lmp_options')
 
-var_str="-var ntypes ${ntypes} -var potential_file ${potential_file} -var input_data_file ${input_data_file} -var occupying_energies_file $(cfg '.occupying_energies_file') -var relaxed_data_file $(cfg '.relaxed_data_file')"
+occupying_energies_file=$(cfg '.occupying_energies_file')
+
+var_str="-var ntypes ${ntypes} \
+  -var potential_file ${potential_file} \
+  -var input_data_file ${input_data_file} \
+  -var occupying_energies_file ${occupying_energies_file} \
+  -var relaxed_data_file $(cfg '.relaxed_data_file')"
+
 more_vars=("units" "dmax" "pressure" "vmax" "etol" "ftol" "maxsteps")
 vars_dict=$(cfg '.extra_vars')
 for var in "${more_vars[@]}"
@@ -39,3 +48,8 @@ do
 done
 
 env ${envvars} mpirun ${mpi_args} -np ${np} ${lmp} ${options} -in in.insertions -log $(cfg '.log_file') ${var_str}
+
+python chemical_potentials.py ${occupying_energies_file} \
+  $(cfg '.axis') \
+  $(cfg '.num_atoms_per_chunk') \
+  $(cfg '.chemical_potentials_file')

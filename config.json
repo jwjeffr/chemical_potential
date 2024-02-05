@@ -21,5 +21,8 @@
         "etol": 0.0,
         "ftol": 1.0e-8,
         "maxsteps": 100000
-    }
+    },
+    "axis": "z",
+    "num_atoms_per_chunk": 100,
+    "chemical_potentials_file": "example/chemical_potentials.txt"
 }
